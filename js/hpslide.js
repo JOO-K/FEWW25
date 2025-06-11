@@ -11,12 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameCount = 25;
     const frameInterval = 100; // 10 FPS (1000ms / 10)
     const projectCaches = new Map();
-    const defaultImage = 'https://via.placeholder.com/800x600.png?text=Image+Not+Available'; // Fallback
+    const defaultImage = 'https://placehold.co/800x600/png?text=Image+Not+Available'; // Reliable fallback
     let isSwitching = false; // Debounce title switches
 
-    // Detect mobile device
-    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
-    console.log(`hpslide.js: Device type: ${isMobile ? 'Mobile' : 'Desktop'}`);
+    // Detect mobile based on screen width
+    const isMobile = window.innerWidth < 800;
+    console.log(`hpslide.js: Initial screen width: ${window.innerWidth}px, isMobile: ${isMobile}`);
 
     if (!titles.length || !frameElement) {
       console.error('hpslide.js error: Missing elements. titles.length=', titles.length, 'frameElement=', frameElement);
@@ -32,8 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       // Append 'low_' for mobile
       if (isMobile) {
-        const baseParts = sequenceBase.split('_');
-        sequenceBase = baseParts[0] + 'low_' + (baseParts[1] || '');
+        sequenceBase = sequenceBase.replace(/Project(\d+)_/, 'Project$1low_');
       }
       if (!projectCaches.has(sequenceBase)) {
         console.log(`hpslide.js: Preloading images for ${sequenceBase}`);
@@ -47,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isFirstProject = title === titles[0];
         imageSources.forEach((src, index) => {
           setTimeout(() => {
+            console.log(`hpslide.js: Attempting to load ${src}`);
             const img = new Image();
             img.src = src;
             img.onload = () => console.log(`hpslide.js: Frame ${src} loaded`);
@@ -92,8 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       // Append 'low_' for mobile
       if (isMobile) {
-        const baseParts = sequenceBase.split('_');
-        sequenceBase = baseParts[0] + 'low_' + (baseParts[1] || '');
+        sequenceBase = sequenceBase.replace(/Project(\d+)_/, 'Project$1low_');
       }
 
       console.log(`hpslide.js: Triggering ${sequenceBase}`);
