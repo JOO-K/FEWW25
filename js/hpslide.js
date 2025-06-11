@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationFrameId = null;
     const frameInterval = 100; // 10 FPS (1000ms / 10)
     const projectCaches = new Map();
-    const defaultImage = 'https://placehold.co/800x600/png?text=Image+Not+Available'; // Reliable fallback
+    const defaultImage = 'https://placehold.co/800x600/png?text=Image+Not+Available'; // Fallback
     let isSwitching = false; // Debounce title switches
     let autoSwitchInterval = null;
     let lastInteraction = 0; // Track last user interaction
@@ -31,37 +31,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide frame element initially
     frameElement.style.opacity = '0';
 
-    // Preload first frame of each project immediately
-    titles.forEach(title => {
+    // Preload first frame of each project from local ./images/ folder
+    titles.forEach((title, index) => {
       let sequenceBase = title.getAttribute('data-sequence');
       if (!sequenceBase) {
         console.error('hpslide.js error: Missing data-sequence for title', title);
         return;
       }
-      // Append 'low_' for mobile, preserving double underscore for Project3
+      // Append 'low_' for mobile in remote sequence, but use local image for first frame
       const projectName = sequenceBase.match(/Project(\d+_{0,2})/)[0];
       const modifiedSequenceBase = isMobile ? sequenceBase.replace(projectName, `${projectName.slice(0, -1)}low_`) : sequenceBase;
+      const localFirstFrame = `./images/${projectName}00000.png`; // Local image (e.g., ./images/Project1_00000.png)
 
       if (!projectCaches.has(modifiedSequenceBase)) {
-        projectCaches.set(modifiedSequenceBase, { sources: [], images: [], loaded: new Set(), failed: new Set() });
-        const firstFrame = `${modifiedSequenceBase}00000.png`;
-        console.log(`hpslide.js: Loading first frame ${firstFrame}`);
+        projectCaches.set(modifiedSequenceBase, { sources: [], images: [], loaded: new Set(), failed: new Set(), localFirstFrame });
+        console.log(`hpslide.js: Loading local first frame ${localFirstFrame}`);
         const img = new Image();
-        img.src = firstFrame;
+        img.src = localFirstFrame;
         img.onload = () => {
-          console.log(`hpslide.js: First frame ${firstFrame} loaded`);
-          projectCaches.get(modifiedSequenceBase).loaded.add(firstFrame);
+          console.log(`hpslide.js: Local first frame ${localFirstFrame} loaded`);
+          projectCaches.get(modifiedSequenceBase).loaded.add(localFirstFrame);
         };
         img.onerror = () => {
-          console.error(`hpslide.js: Failed to load first frame ${firstFrame}`);
-          projectCaches.get(modifiedSequenceBase).failed.add(firstFrame);
+          console.error(`hpslide.js: Failed to load local first frame ${localFirstFrame}`);
+          projectCaches.get(modifiedSequenceBase).failed.add(localFirstFrame);
         };
         projectCaches.get(modifiedSequenceBase).images[0] = img;
-        projectCaches.get(modifiedSequenceBase).sources[0] = firstFrame;
+        projectCaches.get(modifiedSequenceBase).sources[0] = modifiedSequenceBase + '00000.png'; // Remote first frame
       }
     });
 
-    // Preload remaining images in background with optimized mobile delay
+    // Preload remaining remote images in background
     titles.forEach(title => {
       let sequenceBase = title.getAttribute('data-sequence');
       if (!sequenceBase) return;
@@ -144,39 +144,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameNum = currentFrame.toString().padStart(5, '0');
         const src = `${modifiedSequenceBase}${frameNum}.png`;
 
-        // Only set src if frame is loaded
+        // Use loaded remote image or local first frame
         if (cache.loaded.has(src) || cache.images[currentFrame]?.complete) {
           frameElement.src = src;
-          frameElement.classList.add('active');
-          frameElement.style.opacity = '1';
         } else {
-          // Skip frame if not loaded, keep current frame visible
-          console.log(`hpslide.js: Skipping frame ${src}, not loaded yet`);
-          currentFrame = currentFrame > 0 ? currentFrame - 1 : 0; // Rewind to previous frame
+          // Use local first frame if remote isn't loaded
+          const localFirstFrame = cache.localFirstFrame;
+          if (cache.loaded.has(localFirstFrame) || cache.images[0]?.complete) {
+            frameElement.src = localFirstFrame;
+          } else {
+            console.log(`hpslide.js: Skipping frame ${src}, using default image as last resort`);
+            frameElement.src = defaultImage; // Only as last resort
+            currentFrame = currentFrame > 0 ? currentFrame - 1 : 0; // Rewind
+          }
         }
+        frameElement.classList.add('active');
+        frameElement.style.opacity = '1';
 
         animationFrameId = setTimeout(animateSequence, frameInterval);
       }
 
-      // Wait for first frame to load before setting src
-      const firstFrame = `${modifiedSequenceBase}00000.png`;
-      if (cache.loaded.has(firstFrame) || cache.images[0]?.complete) {
-        frameElement.src = firstFrame;
+      // Start with local first frame
+      const localFirstFrame = cache.localFirstFrame;
+      if (cache.loaded.has(localFirstFrame) || cache.images[0]?.complete) {
+        frameElement.src = localFirstFrame;
         frameElement.classList.add('active');
         frameElement.style.opacity = '1';
-        console.log(`hpslide.js: Starting animation with ${firstFrame}`);
+        console.log(`hpslide.js: Starting animation with ${localFirstFrame}`);
         animateSequence();
       } else {
-        console.log(`hpslide.js: Waiting for first frame ${firstFrame} to load`);
+        console.log(`hpslide.js: Waiting for local first frame ${localFirstFrame} to load`);
         const checkLoaded = setInterval(() => {
-          if (cache.loaded.has(firstFrame) || cache.images[0]?.complete) {
+          if (cache.loaded.has(localFirstFrame) || cache.images[0]?.complete) {
             clearInterval(checkLoaded);
-            frameElement.src = firstFrame;
+            frameElement.src = localFirstFrame;
             frameElement.classList.add('active');
             frameElement.style.opacity = '1';
-            console.log(`hpslide.js: Starting animation with ${firstFrame}`);
+            console.log(`hpslide.js: Starting animation with ${localFirstFrame}`);
             animateSequence();
-          } else if (cache.failed.has(firstFrame)) {
+          } else if (cache.failed.has(localFirstFrame)) {
             clearInterval(checkLoaded);
             frameElement.src = defaultImage;
             frameElement.classList.add('active');
@@ -193,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(autoSwitchInterval);
       autoSwitchInterval = setInterval(() => {
         const now = Date.now();
-        if (now - lastInteraction >= 3000) {
+        if (now - lastInteraction >= 5000) {
           currentIndex = (currentIndex + 1) % titles.length;
           const nextTitle = titles[currentIndex];
           console.log(`hpslide.js: Auto-switching to ${nextTitle.querySelector('h1').textContent}`);
@@ -204,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 5000);
     }
 
-    // Wait for Project1's first frame to load before initializing
+    // Wait for Project1's local first frame to load before initializing
     const firstTitle = titles[0];
     let firstSequenceBase = firstTitle.getAttribute('data-sequence');
     if (!firstSequenceBase) {
@@ -213,12 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const projectName = firstSequenceBase.match(/Project(\d+_{0,2})/)[0];
     firstSequenceBase = isMobile ? firstSequenceBase.replace(projectName, `${projectName.slice(0, -1)}low_`) : firstSequenceBase;
-    const firstFrame = `${firstSequenceBase}00000.png`;
+    const firstLocalFrame = `./images/${projectName}00000.png`;
     const cache = projectCaches.get(firstSequenceBase);
     const firstImg = cache.images[0];
 
     firstImg.onload = () => {
-      console.log(`hpslide.js: Project1 first frame ${firstFrame} loaded, starting slideshow`);
+      console.log(`hpslide.js: Project1 local first frame ${firstLocalFrame} loaded, starting slideshow`);
       if (!currentTitle) {
         setActiveTitle(firstTitle);
         triggerSequence(firstTitle, Date.now());
@@ -226,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     firstImg.onerror = () => {
-      console.error(`hpslide.js: Failed to load Project1 first frame ${firstFrame}, using placeholder`);
+      console.error(`hpslide.js: Failed to load Project1 local first frame ${firstLocalFrame}, using default image`);
       if (!currentTitle) {
         frameElement.src = defaultImage;
         frameElement.classList.add('active');
@@ -237,9 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // If first frame is already loaded (cached), initialize immediately
+    // If local first frame is already loaded (cached), initialize immediately
     if (firstImg.complete && !firstImg.naturalWidth) {
-      console.error(`hpslide.js: Project1 first frame ${firstFrame} failed (cached error), using placeholder`);
+      console.error(`hpslide.js: Project1 local first frame ${firstLocalFrame} failed (cached error), using default image`);
       frameElement.src = defaultImage;
       frameElement.classList.add('active');
       frameElement.style.opacity = '1';
@@ -247,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
       triggerSequence(firstTitle, Date.now());
       startAutoSwitch();
     } else if (firstImg.complete) {
-      console.log(`hpslide.js: Project1 first frame ${firstFrame} already loaded (cached), starting slideshow`);
+      console.log(`hpslide.js: Project1 local first frame ${firstLocalFrame} already loaded (cached), starting slideshow`);
       setActiveTitle(firstTitle);
       triggerSequence(firstTitle, Date.now());
       startAutoSwitch();
