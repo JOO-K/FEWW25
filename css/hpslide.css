@@ -55,6 +55,12 @@
   transition: color 0.3s ease;
 }
 
+@media all and (max-width: 800px) {
+  .hpslide-title h1 {
+    font-size: 18px;
+  }
+}
+
 .hpslide-title h2 {
   font-family: ReplicaLight;
   font-size: 12px;
@@ -64,6 +70,12 @@
   margin-top: 8.5px;
   padding: 0;
   transition: color 0.3s ease;
+}
+
+@media all and (max-width: 800px) {
+  .hpslide-title h2 {
+    margin-top: 5px;
+  }
 }
 
 .hpslide-title.active {

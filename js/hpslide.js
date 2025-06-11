@@ -157,7 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       title.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+        // Check if clicking on an <a> tag or the active title
+        const isLinkClick = e.target.closest('a');
+        if (isMobile && title === currentTitle && isLinkClick) {
+          console.log('hpslide.js: Allowing link click for:', title.querySelector('h1').textContent);
+          // Allow default link behavior
+          return; // Skip toggling
+        }
+        e.preventDefault(); // Prevent default only for toggling
         if (title !== currentTitle) {
           console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
           lastInteraction = Date.now(); // Record interaction
@@ -167,6 +174,25 @@ document.addEventListener('DOMContentLoaded', () => {
           startAutoSwitch(); // Restart auto-switch timer
         }
       });
+
+      // Add click listener for <a> tags within titles
+      const link = title.querySelector('a');
+      if (link && isMobile) {
+        link.addEventListener('click', (e) => {
+          if (title === currentTitle) {
+            console.log('hpslide.js: Link clicked for active title:', title.querySelector('h1').textContent);
+            // Allow default link behavior
+          } else {
+            e.preventDefault();
+            console.log('hpslide.js: Toggling sequence for:', title.querySelector('h1').textContent);
+            lastInteraction = Date.now();
+            setActiveTitle(title);
+            stopCurrentSequence();
+            triggerSequence(title, Date.now());
+            startAutoSwitch();
+          }
+        });
+      }
     });
 
     // Activate first title by default and start auto-switch
