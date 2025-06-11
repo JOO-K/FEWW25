@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Hide frame element initially
+    frameElement.style.opacity = '0';
+
     // Preload first frame of each project immediately
     titles.forEach(title => {
       let sequenceBase = title.getAttribute('data-sequence');
@@ -48,26 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
         img.onload = () => {
           console.log(`hpslide.js: First frame ${firstFrame} loaded`);
           projectCaches.get(modifiedSequenceBase).loaded.add(firstFrame);
-          // Set initial frame for Project1
-          if (title === titles[0] && !frameElement.src) {
-            frameElement.src = firstFrame;
-            frameElement.classList.add('active');
-          }
         };
         img.onerror = () => {
           console.error(`hpslide.js: Failed to load first frame ${firstFrame}`);
           projectCaches.get(modifiedSequenceBase).failed.add(firstFrame);
-          if (title === titles[0] && !frameElement.src) {
-            frameElement.src = defaultImage;
-            frameElement.classList.add('active');
-          }
         };
         projectCaches.get(modifiedSequenceBase).images[0] = img;
         projectCaches.get(modifiedSequenceBase).sources[0] = firstFrame;
       }
     });
 
-    // Preload remaining images in background
+    // Preload remaining images in background with optimized mobile delay
     titles.forEach(title => {
       let sequenceBase = title.getAttribute('data-sequence');
       if (!sequenceBase) return;
@@ -95,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
               cache.failed.add(src);
             };
             cache.images[i] = img;
-          }, (isFirstProject ? i : i + frameCount) * 50); // Prioritize first project
+          }, (isFirstProject ? i : i + frameCount) * (isMobile ? 25 : 50)); // Faster delay for mobile
         }
       }
     });
@@ -142,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let currentFrame = 0;
 
       function animateSequence() {
-        if (currentTimestamp !== timestamp) {
+        if (currentTimestamp !== timestamp || !currentTitle) {
           console.log(`hpslide.js: Stopping animation for ${modifiedSequenceBase}`);
           return;
         }
@@ -150,34 +144,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameNum = currentFrame.toString().padStart(5, '0');
         const src = `${modifiedSequenceBase}${frameNum}.png`;
 
-        // Use loaded image, first frame, or placeholder
+        // Only set src if frame is loaded
         if (cache.loaded.has(src) || cache.images[currentFrame]?.complete) {
           frameElement.src = src;
-        } else if (cache.failed.has(src)) {
-          frameElement.src = defaultImage;
+          frameElement.classList.add('active');
+          frameElement.style.opacity = '1';
         } else {
-          const firstFrame = cache.sources[0];
-          frameElement.src = cache.loaded.has(firstFrame) || cache.images[0]?.complete ? firstFrame : defaultImage;
+          // Skip frame if not loaded, keep current frame visible
+          console.log(`hpslide.js: Skipping frame ${src}, not loaded yet`);
+          currentFrame = currentFrame > 0 ? currentFrame - 1 : 0; // Rewind to previous frame
         }
-        frameElement.classList.add('active');
 
         animationFrameId = setTimeout(animateSequence, frameInterval);
       }
 
-      // Start with first frame if loaded, else placeholder
+      // Wait for first frame to load before setting src
       const firstFrame = `${modifiedSequenceBase}00000.png`;
-      frameElement.src = cache.loaded.has(firstFrame) || cache.images[0]?.complete ? firstFrame : defaultImage;
-      frameElement.classList.add('active');
-      console.log(`hpslide.js: Starting animation with ${frameElement.src}`);
-
-      // Only start animation if at least one frame is loaded
-      if (cache.loaded.size > 0 || cache.images.some(img => img && img.complete)) {
+      if (cache.loaded.has(firstFrame) || cache.images[0]?.complete) {
+        frameElement.src = firstFrame;
+        frameElement.classList.add('active');
+        frameElement.style.opacity = '1';
+        console.log(`hpslide.js: Starting animation with ${firstFrame}`);
         animateSequence();
       } else {
-        console.log(`hpslide.js: Delaying animation for ${modifiedSequenceBase} until frames load`);
+        console.log(`hpslide.js: Waiting for first frame ${firstFrame} to load`);
         const checkLoaded = setInterval(() => {
-          if (cache.loaded.size > 0 || cache.images.some(img => img && img.complete)) {
+          if (cache.loaded.has(firstFrame) || cache.images[0]?.complete) {
             clearInterval(checkLoaded);
+            frameElement.src = firstFrame;
+            frameElement.classList.add('active');
+            frameElement.style.opacity = '1';
+            console.log(`hpslide.js: Starting animation with ${firstFrame}`);
+            animateSequence();
+          } else if (cache.failed.has(firstFrame)) {
+            clearInterval(checkLoaded);
+            frameElement.src = defaultImage;
+            frameElement.classList.add('active');
+            frameElement.style.opacity = '1';
+            console.log(`hpslide.js: Starting animation with default image`);
             animateSequence();
           }
         }, 100);
@@ -186,11 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-switch titles every 5 seconds
     function startAutoSwitch() {
-      clearInterval(autoSwitchInterval); // Clear any existing interval
+      clearInterval(autoSwitchInterval);
       autoSwitchInterval = setInterval(() => {
         const now = Date.now();
-        // Only switch if no recent user interaction
-        if (now - lastInteraction >= 5000) {
+        if (now - lastInteraction >= 3000) {
           currentIndex = (currentIndex + 1) % titles.length;
           const nextTitle = titles[currentIndex];
           console.log(`hpslide.js: Auto-switching to ${nextTitle.querySelector('h1').textContent}`);
@@ -201,16 +204,63 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 5000);
     }
 
+    // Wait for Project1's first frame to load before initializing
+    const firstTitle = titles[0];
+    let firstSequenceBase = firstTitle.getAttribute('data-sequence');
+    if (!firstSequenceBase) {
+      console.error('hpslide.js error: Missing data-sequence for first title', firstTitle);
+      return;
+    }
+    const projectName = firstSequenceBase.match(/Project(\d+_{0,2})/)[0];
+    firstSequenceBase = isMobile ? firstSequenceBase.replace(projectName, `${projectName.slice(0, -1)}low_`) : firstSequenceBase;
+    const firstFrame = `${firstSequenceBase}00000.png`;
+    const cache = projectCaches.get(firstSequenceBase);
+    const firstImg = cache.images[0];
+
+    firstImg.onload = () => {
+      console.log(`hpslide.js: Project1 first frame ${firstFrame} loaded, starting slideshow`);
+      if (!currentTitle) {
+        setActiveTitle(firstTitle);
+        triggerSequence(firstTitle, Date.now());
+        startAutoSwitch();
+      }
+    };
+    firstImg.onerror = () => {
+      console.error(`hpslide.js: Failed to load Project1 first frame ${firstFrame}, using placeholder`);
+      if (!currentTitle) {
+        frameElement.src = defaultImage;
+        frameElement.classList.add('active');
+        frameElement.style.opacity = '1';
+        setActiveTitle(firstTitle);
+        triggerSequence(firstTitle, Date.now());
+        startAutoSwitch();
+      }
+    };
+
+    // If first frame is already loaded (cached), initialize immediately
+    if (firstImg.complete && !firstImg.naturalWidth) {
+      console.error(`hpslide.js: Project1 first frame ${firstFrame} failed (cached error), using placeholder`);
+      frameElement.src = defaultImage;
+      frameElement.classList.add('active');
+      frameElement.style.opacity = '1';
+      setActiveTitle(firstTitle);
+      triggerSequence(firstTitle, Date.now());
+      startAutoSwitch();
+    } else if (firstImg.complete) {
+      console.log(`hpslide.js: Project1 first frame ${firstFrame} already loaded (cached), starting slideshow`);
+      setActiveTitle(firstTitle);
+      triggerSequence(firstTitle, Date.now());
+      startAutoSwitch();
+    }
+
     titles.forEach(title => {
       title.addEventListener('mouseenter', () => {
-        if (title !== currentTitle) {
-          console.log('hpslide.js: Hover on:', title.querySelector('h1').textContent);
-          lastInteraction = Date.now();
-          setActiveTitle(title);
-          stopCurrentSequence();
-          triggerSequence(title, Date.now());
-          startAutoSwitch();
-        }
+        console.log('hpslide.js: Hover on:', title.querySelector('h1').textContent);
+        lastInteraction = Date.now();
+        setActiveTitle(title);
+        stopCurrentSequence();
+        triggerSequence(title, Date.now());
+        startAutoSwitch();
       });
       title.addEventListener('touchstart', (e) => {
         const isLinkClick = e.target.closest('a');
@@ -219,14 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         e.preventDefault();
-        if (title !== currentTitle) {
-          console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
-          lastInteraction = Date.now();
-          setActiveTitle(title);
-          stopCurrentSequence();
-          triggerSequence(title, Date.now());
-          startAutoSwitch();
-        }
+        console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
+        lastInteraction = Date.now();
+        setActiveTitle(title);
+        stopCurrentSequence();
+        triggerSequence(title, Date.now());
+        startAutoSwitch();
       });
 
       // Add click listener for <a> tags wrapping titles
@@ -247,19 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     });
-
-    // Activate first title by default and start auto-switch
-    if (titles.length > 0) {
-      setTimeout(() => {
-        const firstTitle = titles[0];
-        if (!currentTitle) {
-          console.log('hpslide.js: Auto-activating first slide');
-          setActiveTitle(firstTitle);
-          triggerSequence(firstTitle, Date.now());
-          startAutoSwitch();
-        }
-      }, 200);
-    }
 
     console.log('hpslide.js: Initialized');
   }
