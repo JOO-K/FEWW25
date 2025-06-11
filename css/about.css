@@ -1,0 +1,51 @@
+.about-wrapper{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    padding: 50px;
+    margin-top: 50px;
+}
+
+
+@media all and (max-width: 800px) {
+  .about-wrapper {
+    padding: 25px;
+  }
+}
+
+.about-container{
+    width: 50%;
+}
+
+@media all and (max-width: 800px) {
+  .about-container {
+    width: calc(100vw - 50px);
+  }
+}
+
+.about-container h1{
+    font-family: ReplicaLight;
+    font-size: 100px;
+}
+
+
+@media all and (max-width: 800px) {
+  .about-wrapper h1 {
+    font-size: 60px;
+  }
+}
+
+.about-container h2{
+    font-family: ReplicaLight;
+    font-size: 25px;
+    line-height: 35px;
+}
+
+@media all and (max-width: 800px) {
+  .about-wrapper h2 {
+    font-size: 17px;
+    line-height: 25px;
+  }
+}

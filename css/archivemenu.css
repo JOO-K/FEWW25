@@ -21,6 +21,13 @@ a {
     box-sizing: border-box;
 }
 
+@media all and (max-width: 800px) {
+  .archive-wrapper {
+    padding: 15px;
+    padding-top: 80px;
+  }
+}
+
 .archive-container {
     display: flex;
     flex-direction: column;
@@ -28,6 +35,12 @@ a {
     width: calc(100vw - 60px); 
     box-sizing: border-box;
     position: relative; /* Ensure pseudo-element positions correctly */
+}
+
+@media all and (max-width: 800px) {
+  .archive-container {
+    width: calc(100vw - 30px);
+  }
 }
 
 /* Add a dynamic spacer at the bottom */
@@ -73,6 +86,12 @@ a {
     background-color: #141f17;
 }
 
+@media all and (max-width: 800px) {
+  .archive-box {
+    justify-content: space-between;
+  }
+}
+
 .archive-box:hover {
     background-color: darkgreen;
     color: white;
@@ -114,6 +133,12 @@ a {
     overflow: hidden;
 }
 
+@media all and (max-width: 800px) {
+  .archive-title {
+    width: 75%;
+  }
+}
+
 .archive-title h1 {
     color: #e0e0e0;
     font-family: Graphik;
@@ -133,6 +158,12 @@ a {
     overflow: hidden;
 }
 
+@media all and (max-width: 800px) {
+  .archive-info {
+    display: none;
+  }
+}
+
 .archive-info h1 {
     color: #e0e0e0;
     font-family: Graphik;
@@ -150,6 +181,12 @@ a {
     min-width: 50px;
     border: 1px dotted rgba(240, 240, 240, 0.4);
     border-width: 0 1px 0 0;
+}
+
+@media all and (max-width: 800px) {
+  .archive-date {
+    width: 25%
+  }
 }
 
 .archive-date h1 {
@@ -178,6 +215,12 @@ a {
     padding: 0;
     margin: 0;
     margin-top: 7px;
+}
+
+@media all and (max-width: 800px) {
+  .archive-photo {
+    display: none;
+  }
 }
 
 .archive-photo img {

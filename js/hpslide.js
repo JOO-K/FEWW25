@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const projectCaches = new Map();
     const defaultImage = 'https://placehold.co/800x600/png?text=Image+Not+Available'; // Reliable fallback
     let isSwitching = false; // Debounce title switches
+    let autoSwitchInterval = null;
+    let lastInteraction = 0; // Track last user interaction
+    let currentIndex = 0; // Track current title index for auto-switch
 
     // Detect mobile based on screen width
     const isMobile = window.innerWidth < 800;
@@ -66,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       newTitle.classList.add('active');
       currentTitle = newTitle;
+      // Update currentIndex to match newTitle
+      currentIndex = Array.from(titles).indexOf(newTitle);
     }
 
     function stopCurrentSequence() {
@@ -123,27 +128,48 @@ document.addEventListener('DOMContentLoaded', () => {
       animateSequence();
     }
 
+    // Auto-switch titles every 5 seconds
+    function startAutoSwitch() {
+      clearInterval(autoSwitchInterval); // Clear any existing interval
+      autoSwitchInterval = setInterval(() => {
+        const now = Date.now();
+        // Only switch if no recent user interaction
+        if (now - lastInteraction >= 5000) {
+          currentIndex = (currentIndex + 1) % titles.length;
+          const nextTitle = titles[currentIndex];
+          console.log(`hpslide.js: Auto-switching to ${nextTitle.querySelector('h1').textContent}`);
+          setActiveTitle(nextTitle);
+          stopCurrentSequence();
+          triggerSequence(nextTitle, Date.now());
+        }
+      }, 5000);
+    }
+
     titles.forEach(title => {
       title.addEventListener('mouseenter', () => {
         if (title !== currentTitle) {
           console.log('hpslide.js: Hover on:', title.querySelector('h1').textContent);
+          lastInteraction = Date.now(); // Record interaction
           setActiveTitle(title);
           stopCurrentSequence();
           triggerSequence(title, Date.now());
+          startAutoSwitch(); // Restart auto-switch timer
         }
       });
       title.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (title !== currentTitle) {
           console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
+          lastInteraction = Date.now(); // Record interaction
           setActiveTitle(title);
           stopCurrentSequence();
           triggerSequence(title, Date.now());
+          startAutoSwitch(); // Restart auto-switch timer
         }
       });
     });
 
-    // Activate first title by default
+    // Activate first title by default and start auto-switch
     if (titles.length > 0) {
       setTimeout(() => {
         const firstTitle = titles[0];
@@ -151,8 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('hpslide.js: Auto-activating first slide');
           setActiveTitle(firstTitle);
           triggerSequence(firstTitle, Date.now());
+          startAutoSwitch(); // Start auto-switch
         }
-      }, 100);
+      }, 200);
     }
 
     console.log('hpslide.js: Initialized');
