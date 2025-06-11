@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultImage = 'https://via.placeholder.com/800x600.png?text=Image+Not+Available'; // Fallback
     let isSwitching = false; // Debounce title switches
 
+    // Detect mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+    console.log(`hpslide.js: Device type: ${isMobile ? 'Mobile' : 'Desktop'}`);
+
     if (!titles.length || !frameElement) {
       console.error('hpslide.js error: Missing elements. titles.length=', titles.length, 'frameElement=', frameElement);
       return;
@@ -21,10 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Preload all images for all projects
     titles.forEach(title => {
-      const sequenceBase = title.getAttribute('data-sequence');
+      let sequenceBase = title.getAttribute('data-sequence');
       if (!sequenceBase) {
         console.error('hpslide.js error: Missing data-sequence for title', title);
         return;
+      }
+      // Append 'low_' for mobile
+      if (isMobile) {
+        const baseParts = sequenceBase.split('_');
+        sequenceBase = baseParts[0] + 'low_' + (baseParts[1] || '');
       }
       if (!projectCaches.has(sequenceBase)) {
         console.log(`hpslide.js: Preloading images for ${sequenceBase}`);
@@ -34,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
           imageSources.push(`${sequenceBase}${frameNum}.png`);
         }
         projectCaches.set(sequenceBase, { sources: imageSources, images: [], failed: new Set() });
+        // Prioritize first project's images
+        const isFirstProject = title === titles[0];
         imageSources.forEach((src, index) => {
           setTimeout(() => {
             const img = new Image();
@@ -44,17 +55,25 @@ document.addEventListener('DOMContentLoaded', () => {
               projectCaches.get(sequenceBase).failed.add(src);
             };
             projectCaches.get(sequenceBase).images.push(img);
-          }, index * 50); // Stagger by 50ms
+          }, (isFirstProject ? index : index + frameCount) * 50); // Prioritize first project
         });
       }
     });
 
     function setActiveTitle(newTitle) {
-      if (currentTitle) {
+      if (currentTitle && currentTitle !== newTitle) {
         currentTitle.classList.remove('active');
       }
       newTitle.classList.add('active');
       currentTitle = newTitle;
+    }
+
+    function stopCurrentSequence() {
+      if (animationFrameId) {
+        clearTimeout(animationFrameId);
+        animationFrameId = null;
+      }
+      frameElement.classList.remove('active');
     }
 
     function triggerSequence(title, timestamp) {
@@ -65,21 +84,20 @@ document.addEventListener('DOMContentLoaded', () => {
       isSwitching = true;
       setTimeout(() => { isSwitching = false; }, 200); // Debounce for 200ms
 
-      const sequenceBase = title.getAttribute('data-sequence');
+      let sequenceBase = title.getAttribute('data-sequence');
       if (!sequenceBase) {
         console.error('hpslide.js error: No data-sequence for title', title);
         isSwitching = false;
         return;
       }
+      // Append 'low_' for mobile
+      if (isMobile) {
+        const baseParts = sequenceBase.split('_');
+        sequenceBase = baseParts[0] + 'low_' + (baseParts[1] || '');
+      }
 
       console.log(`hpslide.js: Triggering ${sequenceBase}`);
       currentTimestamp = timestamp;
-      frameElement.classList.remove('active');
-
-      if (animationFrameId) {
-        clearTimeout(animationFrameId);
-        animationFrameId = null;
-      }
 
       const cache = projectCaches.get(sequenceBase);
       let currentFrame = 0;
@@ -104,15 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
       frameElement.classList.add('active');
       console.log(`hpslide.js: Starting animation with ${firstFrame}`);
       animateSequence();
-
-      title.addEventListener('mouseleave', () => {
-        if (currentTitle === title && currentTimestamp === timestamp) {
-          console.log(`hpslide.js: Stopping on mouseleave for ${sequenceBase}`);
-          clearTimeout(animationFrameId);
-          frameElement.classList.remove('active');
-          isSwitching = false;
-        }
-      }, { once: true });
     }
 
     titles.forEach(title => {
@@ -120,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (title !== currentTitle) {
           console.log('hpslide.js: Hover on:', title.querySelector('h1').textContent);
           setActiveTitle(title);
+          stopCurrentSequence();
           triggerSequence(title, Date.now());
         }
       });
@@ -128,16 +138,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (title !== currentTitle) {
           console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
           setActiveTitle(title);
+          stopCurrentSequence();
           triggerSequence(title, Date.now());
         }
       });
     });
 
+    // Activate first title by default
     if (titles.length > 0) {
       setTimeout(() => {
         const firstTitle = titles[0];
         if (!currentTitle) {
-          console.log('hpslide.js: Auto-triggering first slide');
+          console.log('hpslide.js: Auto-activating first slide');
           setActiveTitle(firstTitle);
           triggerSequence(firstTitle, Date.now());
         }
