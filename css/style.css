@@ -1,22 +1,21 @@
 /* Set Base Body CSS blank slate */
 body {
-margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden; /* Prevent scrolling beyond viewport */
+  margin: 0;
+  padding: 0;
   background-color: #e0e0e0;
 }
 
 /* Three.js Canvas Element Styling */
 canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    z-index: 2; /* Ensure canvas is behind other elements */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  z-index: 2;
+  /* Ensure canvas is behind other elements */
 }
 
 /* Load Fonts from folder*/
@@ -91,7 +90,7 @@ body {
   font-style: normal;
 }
 
-.contact-header{
+.contact-header {
   position: absolute;
   left: 55px;
   top: 130px;
@@ -99,12 +98,12 @@ body {
 
 @media all and (max-width: 800px) {
   .contact-header {
-      left: 30px;
-      top: 100px;
+    left: 30px;
+    top: 100px;
   }
 }
 
-.contact-header h1{
+.contact-header h1 {
   font-family: ReplicaLight;
   font-size: 35px;
   color: darkgreen;
@@ -130,7 +129,7 @@ body {
     width: calc(100vw - 60px);
     max-width: unset;
     bottom: 20px;
-z-index: 4;
+    z-index: 4;
   }
 }
 
@@ -142,12 +141,12 @@ input {
   letter-spacing: 1px;
   font-size: 15px;
   padding: 20px;
-    background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-input:focus{
+input:focus {
   border: 1px dashed black;
 }
 
@@ -160,13 +159,13 @@ textarea {
   font-family: ReplicaLight;
   letter-spacing: 1px;
   font-size: 15px;
-    background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   resize: none;
   overflow: scroll;
-  
-  
+
+
 }
 
 button {
@@ -187,13 +186,13 @@ button {
   margin-top: 20px;
 }
 
-button:hover{
+button:hover {
   background-color: darkgreen;
   cursor: pointer;
   color: white;
 }
 
-#result{
+#result {
   font-family: ReplicaLight;
   letter-spacing: 1px;
   font-size: 10px;
@@ -218,15 +217,15 @@ button:hover{
   box-sizing: border-box;
 
   animation: name duration timing-function delay iteration-count direction fill-mode;
-  animation:  AnimationName  1s ease-in infinite;
+  animation: AnimationName 1s ease-in infinite;
 
-  filter: drop-shadow(1px 1px 5px rgba(0,0,0, 0.5));
+  filter: drop-shadow(1px 1px 5px rgba(0, 0, 0, 0.5));
 
   transform: translateX(50px);
 
   mix-blend-mode: color-burn;
 
-  border: 1ps solid rgba(0,0,0, 0.5);
+  border: 1ps solid rgba(0, 0, 0, 0.5);
   border-radius: 15px;
   border-width: 1px 0px 0px 0px;
 
@@ -236,30 +235,30 @@ button:hover{
 /* You can make it simple */
 @keyframes AnimationName2 {
 
-    0% {
-        width: 10px;
-    }
+  0% {
+    width: 10px;
+  }
 
-    100% {
-        width: 50px;
-    }
+  100% {
+    width: 50px;
+  }
 
 }
 
 /* You can add more breakpoints with percentages for more keyframes */
 @keyframes AnimationName {
 
-    0% {
-        font-size: 0px;
-    }
+  0% {
+    font-size: 0px;
+  }
 
-    50% {
-        font-size: 15px;
-    }
+  50% {
+    font-size: 15px;
+  }
 
-    100% {
-        font-size: 10px;
-    }
+  100% {
+    font-size: 10px;
+  }
 
 }
 
@@ -270,9 +269,8 @@ button:hover{
 }
 
 /* This image css always fills the div it is inside/scales the image and doesnt overflow */
-.ExampleClass img{
+.ExampleClass img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
