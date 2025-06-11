@@ -1,0 +1,28 @@
+.widgets-container{
+    position: absolute;
+    right: 0;
+    width: calc(100vw - 400px);
+    height: 45px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: transparent;
+    margin: 0;
+    padding: 0px 15px;
+    z-index: 10000;
+}
+
+.widgets-container h1{
+    width: 25%;
+    overflow: hidden;
+   overflow-wrap: break-word;
+    text-align: right;
+    font-family: ReplicaLight;
+    font-size: 14px;
+    line-height: 30px;
+    margin: 0;
+    padding: 0;
+    color: white;
+    background-color: transparent;
+}
