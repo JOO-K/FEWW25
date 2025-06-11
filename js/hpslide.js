@@ -1,41 +1,51 @@
-document.addEventListener('DOMContentLoaded', function() {
-  function initHomepageSlide() {
-    const titles = document.querySelectorAll('.hpslide-title');
-    const posterElement = document.querySelector('.hpslide-poster');
-    const lowResVideoElement = document.querySelector('.hpslide-video-low');
-    const highResVideoElement = document.querySelector('.hpslide-video-high');
-    let currentTitle = null;
-    let currentTimestamp = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('hpslide.js: DOM loaded');
 
-    if (!titles.length || !posterElement || !lowResVideoElement || !highResVideoElement) {
-      console.log('hpslide elements not found, waiting for dynamic load');
+  function initHomepageSlide() {
+    console.log('hpslide.js: Initializing');
+    const titles = document.querySelectorAll('.hpslide-title');
+    const frameElement = document.querySelector('.hpslide-frame');
+    let currentTitle = null;
+    let currentTimestamp = null;
+    let animationFrameId = null;
+    const frameCount = 25;
+    const frameInterval = 100; // 10 FPS (1000ms / 10)
+    const projectCaches = new Map();
+    const defaultImage = 'https://via.placeholder.com/800x600.png?text=Image+Not+Available'; // Fallback
+    let isSwitching = false; // Debounce title switches
+
+    if (!titles.length || !frameElement) {
+      console.error('hpslide.js error: Missing elements. titles.length=', titles.length, 'frameElement=', frameElement);
       return;
     }
 
-    // Preload videos and posters
-    const videoCache = new Map();
-    const posterCache = new Map();
+    // Preload all images for all projects
     titles.forEach(title => {
-      const lowResSrc = title.getAttribute('data-lowres');
-      const posterSrc = title.getAttribute('data-poster');
-      if (lowResSrc) {
-        const video = document.createElement('video');
-        video.src = lowResSrc;
-        video.autoplay = true;
-        video.muted = true;
-        video.loop = true;
-        video.playsinline = true;
-        video.preload = 'auto';
-        video.load();
-        video.play().then(() => video.pause()).catch(err => console.error(`Failed to preload ${lowResSrc}:`, err));
-        videoCache.set(lowResSrc, video);
+      const sequenceBase = title.getAttribute('data-sequence');
+      if (!sequenceBase) {
+        console.error('hpslide.js error: Missing data-sequence for title', title);
+        return;
       }
-      if (posterSrc) {
-        const img = new Image();
-        img.src = posterSrc;
-        img.onload = () => console.log(`Poster ${posterSrc} loaded`);
-        img.onerror = () => console.error(`Failed to load poster ${posterSrc}`);
-        posterCache.set(posterSrc, img);
+      if (!projectCaches.has(sequenceBase)) {
+        console.log(`hpslide.js: Preloading images for ${sequenceBase}`);
+        const imageSources = [];
+        for (let i = 0; i < frameCount; i++) {
+          const frameNum = i.toString().padStart(5, '0');
+          imageSources.push(`${sequenceBase}${frameNum}.png`);
+        }
+        projectCaches.set(sequenceBase, { sources: imageSources, images: [], failed: new Set() });
+        imageSources.forEach((src, index) => {
+          setTimeout(() => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => console.log(`hpslide.js: Frame ${src} loaded`);
+            img.onerror = () => {
+              console.error(`hpslide.js: Failed to load frame ${src}`);
+              projectCaches.get(sequenceBase).failed.add(src);
+            };
+            projectCaches.get(sequenceBase).images.push(img);
+          }, index * 50); // Stagger by 50ms
+        });
       }
     });
 
@@ -47,83 +57,78 @@ document.addEventListener('DOMContentLoaded', function() {
       currentTitle = newTitle;
     }
 
-    function triggerVideo(title, timestamp) {
-      const lowResSrc = title.getAttribute('data-lowres');
-      const highResSrc = title.getAttribute('data-highres');
-      const posterSrc = title.getAttribute('data-poster');
+    function triggerSequence(title, timestamp) {
+      if (isSwitching) {
+        console.log('hpslide.js: Debouncing switch for', title.querySelector('h1').textContent);
+        return;
+      }
+      isSwitching = true;
+      setTimeout(() => { isSwitching = false; }, 200); // Debounce for 200ms
 
-      if (!lowResSrc || !highResSrc || !posterSrc) {
-        console.error('Missing video or poster source');
+      const sequenceBase = title.getAttribute('data-sequence');
+      if (!sequenceBase) {
+        console.error('hpslide.js error: No data-sequence for title', title);
+        isSwitching = false;
         return;
       }
 
+      console.log(`hpslide.js: Triggering ${sequenceBase}`);
       currentTimestamp = timestamp;
-      posterElement.src = posterSrc;
-      posterElement.classList.add('active');
-      lowResVideoElement.classList.remove('active');
-      highResVideoElement.classList.remove('active');
+      frameElement.classList.remove('active');
 
-      lowResVideoElement.src = lowResSrc;
-      lowResVideoElement.load();
+      if (animationFrameId) {
+        clearTimeout(animationFrameId);
+        animationFrameId = null;
+      }
 
-      const onLowResPlaying = () => {
-        if (currentTimestamp !== timestamp) return;
-        lowResVideoElement.play().then(() => {
-          requestAnimationFrame(() => {
-            lowResVideoElement.classList.add('active');
-            setTimeout(() => {
-              if (currentTimestamp === timestamp) {
-                posterElement.classList.remove('active');
-              }
-            }, 150);
-          });
-        }).catch(err => {
-          console.error('Low-res video playback failed:', err);
-          if (currentTimestamp === timestamp) {
-            posterElement.classList.add('active');
-          }
-        });
-        lowResVideoElement.removeEventListener('playing', onLowResPlaying);
-      };
-      lowResVideoElement.addEventListener('playing', onLowResPlaying);
+      const cache = projectCaches.get(sequenceBase);
+      let currentFrame = 0;
 
-      const highResVideo = document.createElement('video');
-      highResVideo.src = highResSrc;
-      highResVideo.autoplay = true;
-      highResVideo.muted = true;
-      highResVideo.loop = true;
-      highResVideo.playsinline = true;
-      highResVideo.preload = 'auto';
-      highResVideo.load();
-      highResVideo.oncanplaythrough = () => {
-        if (currentTimestamp !== timestamp) return;
-        const currentTime = lowResVideoElement.currentTime;
-        highResVideoElement.src = highResSrc;
-        highResVideoElement.currentTime = currentTime;
-        highResVideoElement.play().then(() => {
-          requestAnimationFrame(() => {
-            highResVideoElement.classList.add('active');
-            setTimeout(() => {
-              if (currentTimestamp === timestamp) {
-                lowResVideoElement.classList.remove('active');
-              }
-            }, 150);
-          });
-        }).catch(err => {
-          console.error('High-res video playback failed:', err);
-          if (currentTimestamp === timestamp) {
-            lowResVideoElement.classList.add('active');
-          }
-        });
-      };
+      function animateSequence() {
+        if (currentTimestamp !== timestamp) {
+          console.log(`hpslide.js: Stopping animation for ${sequenceBase}`);
+          return;
+        }
+        currentFrame = (currentFrame + 1) % frameCount;
+        const frameNum = currentFrame.toString().padStart(5, '0');
+        const src = `${sequenceBase}${frameNum}.png`;
+
+        frameElement.src = cache.failed.has(src) ? defaultImage : src;
+        frameElement.classList.add('active');
+
+        animationFrameId = setTimeout(animateSequence, frameInterval);
+      }
+
+      const firstFrame = `${sequenceBase}00000.png`;
+      frameElement.src = cache.failed.has(firstFrame) ? defaultImage : firstFrame;
+      frameElement.classList.add('active');
+      console.log(`hpslide.js: Starting animation with ${firstFrame}`);
+      animateSequence();
+
+      title.addEventListener('mouseleave', () => {
+        if (currentTitle === title && currentTimestamp === timestamp) {
+          console.log(`hpslide.js: Stopping on mouseleave for ${sequenceBase}`);
+          clearTimeout(animationFrameId);
+          frameElement.classList.remove('active');
+          isSwitching = false;
+        }
+      }, { once: true });
     }
 
     titles.forEach(title => {
       title.addEventListener('mouseenter', () => {
         if (title !== currentTitle) {
-          console.log('Hover on title:', title.querySelector('h1').textContent);
+          console.log('hpslide.js: Hover on:', title.querySelector('h1').textContent);
           setActiveTitle(title);
-          triggerVideo(title, Date.now());
+          triggerSequence(title, Date.now());
+        }
+      });
+      title.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (title !== currentTitle) {
+          console.log('hpslide.js: Touch on:', title.querySelector('h1').textContent);
+          setActiveTitle(title);
+          triggerSequence(title, Date.now());
         }
       });
     });
@@ -132,21 +137,22 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         const firstTitle = titles[0];
         if (!currentTitle) {
-          console.log('Auto-triggering first slide');
+          console.log('hpslide.js: Auto-triggering first slide');
           setActiveTitle(firstTitle);
-          triggerVideo(firstTitle, Date.now());
+          triggerSequence(firstTitle, Date.now());
         }
-      }, 0);
+      }, 100);
     }
 
-    console.log('Homepage slide initialized');
+    console.log('hpslide.js: Initialized');
   }
 
-  // Wait for jQuery and hpslide to load
   function checkAndInit() {
     if (window.jQuery && document.querySelector('.hpslide-wrapper')) {
+      console.log('hpslide.js: jQuery and .hpslide-wrapper found');
       initHomepageSlide();
     } else {
+      console.log('hpslide.js: Waiting for jQuery or .hpslide-wrapper');
       setTimeout(checkAndInit, 100);
     }
   }

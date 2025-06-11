@@ -50,7 +50,6 @@
 }
 
 .hpslide-title.active {
-  
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -73,7 +72,7 @@
   z-index: 1;
 }
 
-.hpslide-poster {
+.hpslide-frame {
   position: absolute;
   top: 0;
   right: 0;
@@ -84,29 +83,6 @@
   transition: opacity 0.3s ease-in-out;
 }
 
-.hpslide-poster.active {
+.hpslide-frame.active {
   opacity: 1;
-}
-
-.hpslide-video {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.2;
-  transition: opacity 0.3s ease-in-out;
-}
-
-.hpslide-video.active {
-  opacity: 1;
-}
-
-.hpslide-video-low {
-  z-index: 1;
-}
-
-.hpslide-video-high {
-  z-index: 2;
 }
