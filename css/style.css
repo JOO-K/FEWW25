@@ -91,6 +91,115 @@ body {
   font-style: normal;
 }
 
+.contact-header{
+  position: absolute;
+  left: 55px;
+  top: 130px;
+}
+
+@media all and (max-width: 800px) {
+  .contact-header {
+      left: 30px;
+      top: 100px;
+  }
+}
+
+.contact-header h1{
+  font-family: ReplicaLight;
+  font-size: 35px;
+  color: darkgreen;
+}
+
+
+#form {
+  position: absolute;
+  left: 40px;
+  top: 200px;
+  width: 50vw;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-radius: 5px 30px 5px 5px;
+
+}
+
+@media all and (max-width: 800px) {
+  #form {
+    left: 15px;
+    width: calc(100vw - 60px);
+    max-width: unset;
+    bottom: 20px;
+z-index: 4;
+  }
+}
+
+input {
+  margin: 0px 0px 10px 0px;
+  border: none;
+  border-radius: 3px 15px 3px 3px;
+  font-family: ReplicaLight;
+  letter-spacing: 1px;
+  font-size: 15px;
+  padding: 20px;
+    background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+input:focus{
+  border: 1px dashed black;
+}
+
+textarea {
+  height: 150px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 3px;
+  padding: 20px;
+  font-family: ReplicaLight;
+  letter-spacing: 1px;
+  font-size: 15px;
+    background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  resize: none;
+  overflow: scroll;
+  
+  
+}
+
+button {
+  border: none;
+  width: 100px;
+  border-radius: 88px;
+  font-family: ReplicaLight;
+  letter-spacing: 1px;
+  font-size: 15px;
+  padding: 10px;
+  color: darkgreen;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-sizing: border-box;
+  border: .1px solid darkseagreen;
+  transition: .1s;
+  margin-top: 20px;
+}
+
+button:hover{
+  background-color: darkgreen;
+  cursor: pointer;
+  color: white;
+}
+
+#result{
+  font-family: ReplicaLight;
+  letter-spacing: 1px;
+  font-size: 10px;
+  margin-top: 20px;
+}
+
 /* Useful, But Hard to Remember CSS Structures */
 /* ScreenSize Adjustment, Animation, Load Font, Have img Fit Inside Div */
 
