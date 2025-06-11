@@ -17,6 +17,7 @@
 @media all and (max-width: 800px) {
     .nav-wrapper {
         justify-content: space-between;
+        padding-right: 14px;
     }
 }
 
@@ -85,7 +86,7 @@
 
 @media all and (max-width: 800px) {
     .nav-link {
-        margin-left: 12px;
+        margin: 14px 4px 0px 4px;
     }
 }
 
@@ -102,7 +103,7 @@
 
 @media all and (max-width: 800px) {
     .first-link {
-        margin-left: 12px;
+      
     }
 }
 
